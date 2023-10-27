@@ -17,16 +17,28 @@ def plantuml_header():
     header = "\n".join(
         (
             "@startuml",
-            "' This diagram is generated with "
-            "https://github.com/Felixoid/clickhouse-plantuml",
+            "' The seed of this diagram came from https://github.com/Felixoid/clickhouse-plantuml",
             "!define Table(x) class x << (T,mistyrose) >>",
             "!define View(x) class x << (V,lightblue) >>",
             "!define MaterializedView(x) class x << (m,orange) >>",
             "!define Distributed(x) class x << (D,violet) >>",
-            "",
+            "<style>",
+            "classDiagram {",
+            "  LineThickness 2",
+            "  arrow {",
+            "    LineThickness 4",
+            "  }",
+            "}",
+            "document {",
+            "  BackGroundColor transparent",
+            "}",
+            "</style>",
             "hide empty methods",
             "hide stereotypes",
-            "skinparam classarrowcolor gray",
+            "hide circle",
+            "skinparam defaultFontName Courier",
+            "skinparam ArrowFontStyle bold",
+            "skinparam roundcorner 20",
             "",
             "",
         )
@@ -55,8 +67,8 @@ def gen_table(table: Table) -> str:
     # Table header
     code = "{}({}) {{\n".format(table_macros(t.engine), str(t))
 
-    code += addSpaces(gen_table_engine(t))
     code += addSpaces(gen_table_columns(t))
+    code += addSpaces(gen_table_engine(t))
 
     # Table footer
     code += "}\n\n"
@@ -88,7 +100,7 @@ def table_macros(table_type: str):
 
 def gen_table_engine(table: Table) -> str:
     t = table
-    code = "ENGINE=**{}**\n".format(t.engine)
+    code = "..engine..\n{}\n".format(t.engine)
     if t.engine_config:
         code += "..engine config..\n"
     for k, v in t.engine_config:
@@ -110,8 +122,12 @@ def gen_table_columns(table: Table) -> str:
         table_keys.insert(2, "primary")
 
     code = "==columns==\n"
+    maxNameLength = 0
     for c in t.columns:
-        code += "{}: {}{}\n".format(c.name, c.type, column_keys(c, table_keys))
+        if len(c.name) > maxNameLength:
+            maxNameLength = len(c.name)
+    for c in t.columns:
+        code += "{} : {}{}\n".format(c.name.ljust(maxNameLength, ' '), c.type, column_keys(c, table_keys))
 
     for k in table_keys:
         key_string = getattr(t, "{}_key".format(k))
